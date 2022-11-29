@@ -33,11 +33,12 @@ def load_user_data(user_id, data_dir):
         for fn in filenames
     ]
     df = pd.concat(dataframes)
-    df = handle_outliers(df, "Temperature (F)")
-    df = df[["Time", "Temperature (F)", "Temperature (Outliers Fixed)"]]
+    df = df[["Time", "Temperature (F)"]]
     df["Time"] = pd.to_datetime(
         df["Time"], unit=("s" if df["Time"].dtype == int else None)
     )
+    df = handle_outliers(df, "Temperature (F)")
+    df = df[["Time", "Temperature (F)", "Temperature (Outliers Fixed)"]]
     df = df.rename(
         columns={
             "Time": "ds",
@@ -52,10 +53,8 @@ def handle_outliers(df, col_name, threshold=1.5):
     """return pd.DataFrame with replaced outliers with interpolated values."""
     z = np.abs(stats.zscore(df[col_name]))
     ind_outliers = z > threshold
-    df["Temperature (Outliers Fixed)"] = df[col_name].mask(ind_outliers)
-    df = df.interpolate()  # -------------------- fill mid gaps with linterp
-    df = df.interpolate(method="bfill")  # ------ fill gaps at the start
-    df = df.interpolate(method="ffill")  # ------ fill gaps at the end
+    new_col_name = "Temperature (Outliers Fixed)"
+    df[new_col_name] = df[col_name].mask(ind_outliers).interpolate()
     df.reindex()
     return df
 
